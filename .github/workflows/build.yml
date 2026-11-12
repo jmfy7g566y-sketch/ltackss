@@ -1,0 +1,45 @@
+name: Build itackss for Windows
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - itackss_Windows11_final.zip
+      - .github/workflows/build.yml
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Download project
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Extract project
+        shell: pwsh
+        run: |
+          Expand-Archive -Path itackss_Windows11_final.zip -DestinationPath .
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r itackss/requirements.txt
+          pip install pyinstaller
+
+      - name: Build EXE
+        shell: pwsh
+        run: |
+          cd itackss
+          pyinstaller --noconfirm --clean --windowed --name itackss --collect-all PySide6 --collect-all shiboken6 main.py
+          Compress-Archive -Path dist/itackss/* -DestinationPath ../itackss-Windows.zip
+
+      - name: Upload Windows app
+        uses: actions/upload-artifact@v4
+        with:
+          name: itackss-Windows
+          path: itackss-Windows.zip
